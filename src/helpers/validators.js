@@ -1,50 +1,105 @@
-/**
- * @file Домашка по FP ч. 1
- *
- * Основная задача — написать самому, или найти в FP библиотеках функции anyPass/allPass
- * Эти функции/их аналоги есть и в ramda и в lodash
- *
- * allPass — принимает массив функций-предикатов, и возвращает функцию-предикат, которая
- * вернет true для заданного списка аргументов, если каждый из предоставленных предикатов
- * удовлетворяет этим аргументам (возвращает true)
- *
- * anyPass — то же самое, только удовлетворять значению может единственная функция-предикат из массива.
- *
- * Если какие либо функции написаны руками (без использования библиотек) это не является ошибкой
- */
+import {
+  allPass,
+  any,
+  compose,
+  countBy,
+  dissoc,
+  equals,
+  gte,
+  identity,
+  prop,
+  values,
+  propEq,
+  complement,
+} from "ramda";
 
-// 1. Красная звезда, зеленый квадрат, все остальные белые.
-export const validateFieldN1 = ({star, square, triangle, circle}) => {
-    if (triangle !== 'white' || circle !== 'white') {
-        return false;
-    }
+// Операции сравнения
+const greaterOrEquals = (a) => (b) => gte(b, a);
+const greaterOrEqualsTwo = greaterOrEquals(2);
+const greaterOrEqualsThree = greaterOrEquals(3);
+const anyGreaterOrEqualsThree = any(greaterOrEqualsThree);
+const anyValueGreaterOrEqualsThree = compose(anyGreaterOrEqualsThree, values);
 
-    return star === 'red' && square === 'green';
-};
+// Геттеры фигур
+const getProp = (property) => prop(property);
+const getStar = getProp("star");
+const getTriangle = getProp("triangle");
+const getSquare = getProp("square");
+const getCircle = getProp("circle");
 
-// 2. Как минимум две фигуры зеленые.
-export const validateFieldN2 = () => false;
+// Сравнения цветов
+const isColor = (color) => equals(color);
+const isRed = isColor("red");
+const isWhite = isColor("white");
+const isGreen = isColor("green");
+const isOrange = isColor("orange");
+const isBlue = isColor("blue");
+const dissocWhite = dissoc("white");
+const getGreen = getProp("green");
+const twoGreens = propEq("green", 2);
+const oneRed = propEq("red", 1);
 
-// 3. Количество красных фигур равно кол-ву синих.
-export const validateFieldN3 = () => false;
+// Все цвета
+const countAllColors = compose(countBy(identity), values);
+const countColorsWithoutWhite = compose(dissocWhite, countAllColors);
 
-// 4. Синий круг, красная звезда, оранжевый квадрат треугольник любого цвета
-export const validateFieldN4 = () => false;
+// Базовые композиции геттеров и сравнения цветов
+const isRedStar = compose(isRed, getStar);
+const isWhiteStar = compose(isWhite, getStar);
+const isNotRedStar = complement(isRedStar);
+const isNotWhiteStar = complement(isWhiteStar);
 
-// 5. Три фигуры одного любого цвета кроме белого (четыре фигуры одного цвета – это тоже true).
-export const validateFieldN5 = () => false;
+const isWhiteCircle = compose(isWhite, getCircle);
+const isBlueCircle = compose(isBlue, getCircle);
 
-// 6. Ровно две зеленые фигуры (одна из зелёных – это треугольник), плюс одна красная. Четвёртая оставшаяся любого доступного цвета, но не нарушающая первые два условия
-export const validateFieldN6 = () => false;
+const isWhiteTriangle = compose(isWhite, getTriangle);
+const isGreenTriangle = compose(isGreen, getTriangle);
+const isNotWhiteTriangle = complement(isWhiteTriangle);
 
-// 7. Все фигуры оранжевые.
-export const validateFieldN7 = () => false;
+const isGreenSquare = compose(isGreen, getSquare);
+const isOrangeSquare = compose(isOrange, getSquare);
+const isWhiteSquare = compose(isWhite, getSquare);
+const isNotWhiteSquare = complement(isWhiteSquare);
 
-// 8. Не красная и не белая звезда, остальные – любого цвета.
-export const validateFieldN8 = () => false;
+// Функции с логикой, специфичной для задания
+const isRedEqualsBlue = ({ blue, red }) => blue === red;
+const isSquareEqualsTriangle = ({ square, triangle }) => square === triangle;
 
-// 9. Все фигуры зеленые.
-export const validateFieldN9 = () => false;
+const countTwoGreenColors = compose(twoGreens, countAllColors);
+const countOneRedColor = compose(oneRed, countAllColors);
 
-// 10. Треугольник и квадрат одного цвета (не белого), остальные – любого цвета
-export const validateFieldN10 = () => false;
+const isAllColorsOf = (color) => compose(propEq(color, 4), countAllColors);
+
+const countGreenColors = compose(getGreen, countAllColors);
+
+// Валидация полей
+export const validateFieldN1 = allPass([
+  isRedStar,
+  isGreenSquare,
+  isWhiteTriangle,
+  isWhiteCircle,
+]);
+export const validateFieldN2 = compose(greaterOrEqualsTwo, countGreenColors);
+export const validateFieldN3 = compose(isRedEqualsBlue, countAllColors);
+export const validateFieldN4 = allPass([
+  isRedStar,
+  isBlueCircle,
+  isOrangeSquare,
+]);
+export const validateFieldN5 = compose(
+  anyValueGreaterOrEqualsThree,
+  countColorsWithoutWhite
+);
+export const validateFieldN6 = allPass([
+  isGreenTriangle,
+  countTwoGreenColors,
+  countOneRedColor,
+]);
+export const validateFieldN7 = isAllColorsOf("orange");
+export const validateFieldN8 = allPass([isNotRedStar, isNotWhiteStar]);
+export const validateFieldN9 = isAllColorsOf("green");
+export const validateFieldN10 = allPass([
+  isNotWhiteSquare,
+  isNotWhiteTriangle,
+  isSquareEqualsTriangle,
+]);
